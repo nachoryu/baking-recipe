@@ -8,7 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js" integrity="sha384-JEyTNhjM6R1ElGoJns4U2Ln4ofPcqzSsynQkmEc/KGy6336qAZl70tDLufbkla+3" crossorigin="anonymous"></script>
 <style>
   :root {
     --bg: #f7f0e2;
@@ -289,6 +290,11 @@ function sourceName(meta) {
   return SOURCE_LABEL[meta.source_type] || SOURCE_LABEL.other;
 }
 
+// http/https 링크만 허용 (javascript: 등 차단)
+function safeUrl(u) {
+  return /^https?:\/\//i.test(String(u ?? '').trim()) ? u : '';
+}
+
 // ── 목록 화면 ──
 function renderGrid() {
   const grid = document.querySelector('.grid');
@@ -378,8 +384,9 @@ function renderDetail(slug) {
     return;
   }
   const m = r.meta;
-  const src = m.source_url
-    ? `<a href="${esc(m.source_url)}" target="_blank" rel="noopener">${esc(m.source_name || '원본 보기')} ↗</a>`
+  const url = safeUrl(m.source_url);
+  const src = url
+    ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(m.source_name || '원본 보기')} ↗</a>`
     : (m.source_name ? esc(m.source_name) : '');
   const parts = [
     esc(sourceName(m)),
@@ -402,7 +409,7 @@ function renderDetail(slug) {
         <h1>${esc(m.title || r.slug)}</h1>
         <p class="meta">${parts.join(' · ')}</p>
       </div>
-      <div class="r-body">${decorateBody(marked.parse(r.body))}</div>
+      <div class="r-body">${decorateBody(DOMPurify.sanitize(marked.parse(r.body)))}</div>
     </article>`;
   window.scrollTo(0, 0);
 }
