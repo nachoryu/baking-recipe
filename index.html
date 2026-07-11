@@ -282,9 +282,9 @@ let activeCat = 'baking';  // 'baking' | 'cooking'
 let activeTag = null;
 let query = '';
 
-// 프론트매터 category가 'cooking'이면 쿠킹, 그 외(없음 포함)는 베이킹
+// 카테고리는 폴더로 판별: recipes/cooking/*는 쿠킹, 그 외는 베이킹
 function catOf(r) {
-  return r.meta.category === 'cooking' ? 'cooking' : 'baking';
+  return r.cat;
 }
 
 // ── 프론트매터 파싱 (간단한 YAML 서브셋: key: value, [a, b] 리스트) ──
@@ -308,9 +308,11 @@ async function load() {
   const res = await fetch('recipes/manifest.json');
   const files = await res.json();
   const results = await Promise.allSettled(files.map(async f => {
-    const txt = await (await fetch('recipes/' + encodeURIComponent(f))).text();
+    const path = f.split('/').map(encodeURIComponent).join('/');
+    const txt = await (await fetch('recipes/' + path)).text();
     const { meta, body } = parseFrontmatter(txt);
-    return { slug: f.replace(/\.md$/, ''), meta, body };
+    const cat = f.startsWith('cooking/') ? 'cooking' : 'baking';
+    return { slug: f.replace(/\.md$/, '').split('/').pop(), cat, meta, body };
   }));
   recipes = results.filter(r => r.status === 'fulfilled').map(r => r.value);
   recipes.sort((a, b) => (b.meta.date || '').localeCompare(a.meta.date || ''));
